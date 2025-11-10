@@ -14,14 +14,105 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum AuthProvider {
+  EMAIL_PASSWORD
+  GOOGLE
+  GITHUB
+}
+
 model Users {
-  id       String @id @default(uuid())
-  name     String
-  email    String @unique
-  password String
+  id                 String               @id @default(uuid())
+  firstName          String?
+  lastName           String?
+  email              String               @unique
+  password           String
+  isEmailVerified    Boolean              @default(false)
+  provider           AuthProvider         @default(EMAIL_PASSWORD)
+  verificationToken  verificationToken[]
+  refreshTokens      RefreshToken[]
+  oathAccounts       OAuthAccount[]
+  passwordResetToken PasswordResetToken[]
+  todos              Todo[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@map("users")
+}
+
+model verificationToken {
+  id      String   @id @default(uuid())
+  token   String   @unique
+  expires DateTime
+
+  userId String
+  user   Users  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("verification_tokens")
+}
+
+model RefreshToken {
+  id String @id @default(uuid())
+
+  userId  String
+  user    Users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token   String   @unique
+  expires DateTime
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model OAuthAccount {
+  id String @id @default(uuid())
+
+  userId            String
+  user              Users        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider          AuthProvider
+  providerAccountId String
+  createdAt         DateTime     @default(now())
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("oauth_accounts")
+}
+
+model PasswordResetToken {
+  id      String   @id @default(uuid())
+  token   String   @unique
+  expires DateTime
+
+  userId    String
+  user      Users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("password_reset_tokens")
+}
+
+model Todo {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  priority    Priority @default(MEDIUM)
+  completed   Boolean  @default(false)
+  userId      String
+  user        Users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("todos")
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
 }

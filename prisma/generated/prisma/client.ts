@@ -49,3 +49,28 @@ path.join(process.cwd(), "prisma/generated/prisma/query_engine-windows.dll.node"
  * 
  */
 export type Users = Prisma.UsersModel
+/**
+ * Model verificationToken
+ * 
+ */
+export type verificationToken = Prisma.verificationTokenModel
+/**
+ * Model RefreshToken
+ * 
+ */
+export type RefreshToken = Prisma.RefreshTokenModel
+/**
+ * Model OAuthAccount
+ * 
+ */
+export type OAuthAccount = Prisma.OAuthAccountModel
+/**
+ * Model PasswordResetToken
+ * 
+ */
+export type PasswordResetToken = Prisma.PasswordResetTokenModel
+/**
+ * Model Todo
+ * 
+ */
+export type Todo = Prisma.TodoModel
