@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Your Email - {{appName}}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px 30px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: pulse 4s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+        
+        .logo {
+            position: relative;
+            z-index: 1;
+        }
+        
+        .logo-icon {
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .logo-icon svg {
+            width: 40px;
+            height: 40px;
+            stroke: white;
+            fill: none;
+            stroke-width: 2;
+        }
+        
+        h1 {
+            color: #ffffff;
+            font-size: 28px;
+            font-weight: 700;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .content {
+            padding: 50px 40px;
+        }
+        
+        .greeting {
+            font-size: 18px;
+            color: #333333;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+        
+        .message {
+            font-size: 15px;
+            color: #666666;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+        
+        .token-container {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            margin: 30px 0;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .token-container::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #667eea, #764ba2, #667eea);
+            border-radius: 15px;
+            z-index: -1;
+            animation: gradient-rotate 3s linear infinite;
+            background-size: 200% 200%;
+        }
+        
+        @keyframes gradient-rotate {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .token-label {
+            font-size: 13px;
+            color: #666666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+        
+        .token-code {
+            font-size: 42px;
+            font-weight: 700;
+            color: #667eea;
+            letter-spacing: 8px;
+            font-family: 'Courier New', monospace;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+            margin: 10px 0;
+        }
+        
+        .expiry-info {
+            margin-top: 25px;
+            padding: 15px;
+            background: rgba(255, 193, 7, 0.1);
+            border-left: 4px solid #ffc107;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .expiry-icon {
+            font-size: 20px;
+        }
+        
+        .expiry-text {
+            font-size: 14px;
+            color: #856404;
+            flex: 1;
+            text-align: left;
+        }
+        
+        .expiry-time {
+            font-weight: 700;
+            color: #ff6b6b;
+        }
+        
+        .footer {
+            padding: 30px 40px;
+            background: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        .footer-text {
+            font-size: 13px;
+            color: #999999;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+        
+        .app-signature {
+            font-size: 14px;
+            color: #667eea;
+            font-weight: 600;
+            margin-top: 20px;
+        }
+        
+        .divider {
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #667eea, transparent);
+            margin: 20px 0;
+        }
+        
+        @media only screen and (max-width: 600px) {
+            body {
+                padding: 20px 10px;
+            }
+            
+            .content {
+                padding: 30px 25px;
+            }
+            
+            .token-code {
+                font-size: 32px;
+                letter-spacing: 4px;
+            }
+            
+            h1 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+                    </svg>
+                </div>
+                <h1>{{appName}}</h1>
+            </div>
+        </div>
+        
+        <div class="content">
+            <div class="greeting">Hello {{name}}! 👋</div>
+            
+            <p class="message">
+                Thank you for signing up with <strong>{{appName}}</strong>! We're excited to have you on board.
+                To complete your registration and verify your email address, please use the verification code below.
+            </p>
+            
+            <div class="token-container">
+                <div class="token-label">Your Verification Code</div>
+                <div class="token-code">{{token}}</div>
+            </div>
+            
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{{verificationUrl}}" style="
+                    display: inline-block;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    padding: 15px 30px;
+                    text-decoration: none;
+                    border-radius: 50px;
+                    font-weight: 600;
+                    font-size: 16px;
+                    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+                    transition: all 0.3s ease;
+                " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 25px rgba(102, 126, 234, 0.6)';" 
+                   onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(102, 126, 234, 0.4)';">
+                    🚀 Verify Email Now
+                </a>
+            </div>
+            
+            <p style="font-size: 13px; color: #999; text-align: center; margin-bottom: 20px;">
+                Or copy and paste this link in your browser: <br>
+                <span style="word-break: break-all; color: #667eea;">{{verificationUrl}}</span>
+            </p>
+            
+            <div class="expiry-info">
+                <div class="expiry-icon">⏱️</div>
+                <div class="expiry-text">
+                    This code will expire in <span class="expiry-time">{{expiresIn}}</span>
+                </div>
+            </div>
+            
+            <div class="divider"></div>
+            
+            <p class="message">
+                If you didn't request this verification code, please ignore this email or contact our support team if you have concerns.
+            </p>
+        </div>
+        
+        <div class="footer">
+            <p class="footer-text">
+                This is an automated message, please do not reply to this email. 
+                If you need assistance, please visit our support page.
+            </p>
+            <p class="footer-text">
+                © 2024 <span class="app-signature">{{appName}}</span>. All rights reserved.
+            </p>
+        </div>
+    </div>
+</body>
+</html>
