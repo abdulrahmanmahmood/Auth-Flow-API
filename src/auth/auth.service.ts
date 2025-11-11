@@ -15,6 +15,10 @@ import { ResendVerificationDto } from './dto/resend-verification.dto';
 import { LoginDto } from './dto/login-dto';
 import { JwtService } from '@nestjs/jwt';
 import { randomBytes } from 'crypto';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { LogOutDto } from './dto/logout.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Injectable()
 export class AuthService {
@@ -152,6 +156,64 @@ export class AuthService {
       message: 'User logged in successfully',
       refreshToken,
       accessToken,
+    };
+  }
+
+  async logout(logoutDto: LogOutDto) {
+    const { token } = logoutDto;
+    const refreshToken = await this.prisma.refreshToken.findUnique({
+      where: {
+        token: token,
+      },
+    });
+    await this.prisma.refreshToken.deleteMany({
+      where: {
+        userId: refreshToken?.userId,
+      },
+    });
+
+    return {
+      message: 'User Logged Out Successfully',
+    };
+  }
+
+  async forgetPassword(forgotPasswordDto: ForgotPasswordDto) {}
+
+  async resetPassword(resetPasswordDto: ResetPasswordDto) {}
+
+  async refreshToken(refreshTokenDto: RefreshTokenDto) {
+    const { token } = refreshTokenDto;
+    const refreshToken = await this.prisma.refreshToken.findUnique({
+      where: {
+        token,
+      },
+    });
+    if (!refreshToken) {
+      throw new BadRequestException('Invalid refresh token');
+    }
+    if (new Date() > refreshToken.expires) {
+      await this.prisma.refreshToken.delete({
+        where: {
+          id: refreshToken.id,
+        },
+      });
+      throw new BadRequestException('Refresh token expired');
+    }
+
+    const user = await this.prisma.users.findUnique({
+      where: {
+        id: refreshToken.userId,
+      },
+    });
+    if (!user) {
+      throw new BadRequestException('Invalid credentials');
+    }
+
+    const accessToken = this.generateAccessToken(user.id, user.email);
+
+    const newRefreshToken = this.generateRefreshToken(refreshToken.userId);
+    return {
+      newRefreshToken,
     };
   }
 

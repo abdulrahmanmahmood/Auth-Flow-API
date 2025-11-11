@@ -39,4 +39,21 @@ export class MailService {
       this.logger.error('Failed to send verification email:', error);
     }
   }
+
+  async sendResetPasswordEmail(email: string, code: string) {
+    try {
+      await this.mailService.sendMail({
+        to: email,
+        subject: 'Reset Password',
+        template: 'reset-password',
+        context: {
+          link: 'https://linkktoresetpassword',
+          code: code,
+          expiration: '15',
+        },
+      });
+    } catch (error) {
+      this.logger.error('Failed to send reset password email:', error);
+    }
+  }
 }
