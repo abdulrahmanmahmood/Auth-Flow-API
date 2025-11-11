@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { RegisterDTO } from './dto/register.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { UsersService } from 'src/users/users.service';
@@ -7,6 +12,9 @@ import { ConfigService } from '@nestjs/config';
 import { MailService } from 'src/mail/mail.service';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { ResendVerificationDto } from './dto/resend-verification.dto';
+import { LoginDto } from './dto/login-dto';
+import { JwtService } from '@nestjs/jwt';
+import { randomBytes } from 'crypto';
 
 @Injectable()
 export class AuthService {
@@ -16,6 +24,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
     private readonly mailService: MailService,
+    private readonly jwtService: JwtService,
   ) {}
   async register(registerDto: RegisterDTO) {
     try {
@@ -120,6 +129,32 @@ export class AuthService {
     };
   }
 
+  async login(loginDto: LoginDto) {
+    const { email, password } = loginDto;
+    const user = await this.userService.findByEmail(email);
+    if (!user) {
+      throw new BadRequestException('Wrong Email or Password');
+    }
+
+    if (!user.isEmailVerified) {
+      throw new UnauthorizedException('Email must be verified');
+    }
+
+    const isPasswordValid = bcrypt.compareSync(password, user.password);
+    if (!isPasswordValid) {
+      throw new BadRequestException('Wrong Email or Password');
+    }
+
+    const accessToken = this.generateAccessToken(user.id, email);
+    const refreshToken = await this.generateRefreshToken(user.id);
+
+    return {
+      message: 'User logged in successfully',
+      refreshToken,
+      accessToken,
+    };
+  }
+
   private async hashPassword(password: string): Promise<string> {
     const salt = await bcrypt.genSalt();
     return bcrypt.hash(password, salt);
@@ -153,5 +188,42 @@ export class AuthService {
         userId,
       },
     });
+  }
+
+  private generateAccessToken(userId: string, email: string) {
+    const payload = { sub: userId, email };
+
+    return this.jwtService.sign(payload, {
+      secret: this.configService.get<string>('JWT_SECRET'),
+      expiresIn: '15m',
+    });
+  }
+
+  private async generateRefreshToken(userId: string) {
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+    await this.prisma.refreshToken.deleteMany({
+      where: {
+        userId,
+        expires: { lt: oneWeekAgo },
+      },
+    });
+
+    const jwtToken = this.jwtService.sign(
+      { userId },
+      {
+        secret: this.configService.get<string>('JWT_SECRET'),
+        expiresIn: '7d',
+      },
+    );
+    await this.prisma.refreshToken.create({
+      data: {
+        expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        token: jwtToken,
+        userId: userId,
+      },
+    });
+    return jwtToken;
   }
 }

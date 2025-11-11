@@ -3,6 +3,7 @@ import { AuthService } from './auth.service';
 import { RegisterDTO } from './dto/register.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { ResendVerificationDto } from './dto/resend-verification.dto';
+import { LoginDto } from './dto/login-dto';
 
 @Controller('auth')
 export class AuthController {
@@ -23,5 +24,10 @@ export class AuthController {
     @Body() resendVerificationDto: ResendVerificationDto,
   ) {
     return this.authService.resendVerifyToken(resendVerificationDto);
+  }
+
+  @Post('login')
+  login(@Body() loginDto: LoginDto) {
+    return this.authService.login(loginDto);
   }
 }
