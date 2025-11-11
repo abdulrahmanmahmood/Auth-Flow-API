@@ -5,6 +5,8 @@ import { UsersService } from 'src/users/users.service';
 import bcrypt from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
 import { MailService } from 'src/mail/mail.service';
+import { VerifyEmailDto } from './dto/verify-email.dto';
+import { ResendVerificationDto } from './dto/resend-verification.dto';
 
 @Injectable()
 export class AuthService {
@@ -45,6 +47,77 @@ export class AuthService {
       this.logger.error(error);
       throw error;
     }
+  }
+
+  async verifyToken(verifyEmailDto: VerifyEmailDto) {
+    try {
+      const verificationToken = await this.prisma.verificationToken.findUnique({
+        where: {
+          token: verifyEmailDto.token,
+        },
+      });
+      if (!verificationToken) {
+        throw new BadRequestException({
+          message: 'Invalid verification token',
+          desertion: 'Verification  token is invalid or expired',
+        });
+      }
+      if (new Date() > verificationToken.expires) {
+        await this.prisma.verificationToken.delete({
+          where: {
+            id: verificationToken.id,
+          },
+        });
+        throw new BadRequestException({
+          message: 'Verification token expired',
+          description: 'Verification token is expired',
+        });
+      }
+      await this.userService.markEmailAsVerified(verifyEmailDto.email);
+      await this.prisma.verificationToken.delete({
+        where: {
+          token: verificationToken.token,
+        },
+      });
+
+      return {
+        message: 'Email verified successfully',
+        description:
+          'Email verification completed successfully, You can now login',
+      };
+    } catch (error) {
+      this.logger.error(error);
+      throw error;
+    }
+  }
+
+  async resendVerifyToken(resendVerificationDto: ResendVerificationDto) {
+    const { email } = resendVerificationDto;
+    const user = await this.userService.findByEmail(email);
+    if (!user) {
+      throw new BadRequestException({
+        message: 'User not found',
+        description: 'User with this email does not exist',
+      });
+    }
+
+    if (user.isEmailVerified) {
+      return {
+        message: 'Email is already verified',
+      };
+    }
+
+    const verificationToken = await this.createVerificationToken(user.id);
+    await this.mailService.sendVerificationEmail(
+      email,
+      verificationToken.token,
+      user.firstName as string,
+    );
+
+    return {
+      message: 'Verification email sent successfully ',
+      description: 'Verification email sent successfully',
+    };
   }
 
   private async hashPassword(password: string): Promise<string> {
