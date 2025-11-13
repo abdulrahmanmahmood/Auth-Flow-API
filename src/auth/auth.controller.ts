@@ -50,7 +50,7 @@ export class AuthController {
     description: 'Create a new user account and send email verification',
   })
   @ApiResponse({
-    status: 201,
+    status: HttpStatus.CREATED,
     description: 'User registered successfully',
     schema: {
       type: 'object',
@@ -66,7 +66,7 @@ export class AuthController {
     },
   })
   @ApiResponse({
-    status: 400,
+    status: HttpStatus.BAD_REQUEST,
     description: 'Bad Request - User already exists or validation failed',
   })
   @ApiBody({
@@ -92,7 +92,7 @@ export class AuthController {
     description: 'Verify user email address using the verification token',
   })
   @ApiResponse({
-    status: 200,
+    status: HttpStatus.OK,
     description: 'Email verified successfully',
     schema: {
       type: 'object',
@@ -107,7 +107,7 @@ export class AuthController {
     },
   })
   @ApiResponse({
-    status: 400,
+    status: HttpStatus.BAD_REQUEST,
     description: 'Invalid or expired verification token',
   })
   verify(@Body() verifyEmailDto: VerifyEmailDto) {
@@ -120,7 +120,7 @@ export class AuthController {
     description: 'Resend verification email to the user',
   })
   @ApiResponse({
-    status: 200,
+    status: HttpStatus.OK,
     description: 'Verification email sent successfully',
     schema: {
       type: 'object',
@@ -137,7 +137,7 @@ export class AuthController {
     },
   })
   @ApiResponse({
-    status: 400,
+    status: HttpStatus.BAD_REQUEST,
     description: 'User not found',
   })
   resendVerificationEmail(
@@ -152,7 +152,7 @@ export class AuthController {
     description: 'Authenticate user and return access and refresh tokens',
   })
   @ApiResponse({
-    status: 200,
+    status: HttpStatus.OK,
     description: 'User logged in successfully',
     schema: {
       type: 'object',
@@ -170,11 +170,11 @@ export class AuthController {
     },
   })
   @ApiResponse({
-    status: 400,
+    status: HttpStatus.BAD_REQUEST,
     description: 'Wrong email or password',
   })
   @ApiResponse({
-    status: 401,
+    status: HttpStatus.UNAUTHORIZED,
     description: 'Email must be verified',
   })
   login(@Body() loginDto: LoginDto) {
@@ -187,7 +187,7 @@ export class AuthController {
     description: 'Generate a new access token using refresh token',
   })
   @ApiResponse({
-    status: 200,
+    status: HttpStatus.OK,
     description: 'New tokens generated successfully',
     schema: {
       type: 'object',
@@ -200,7 +200,7 @@ export class AuthController {
     },
   })
   @ApiResponse({
-    status: 400,
+    status: HttpStatus.BAD_REQUEST,
     description: 'Invalid or expired refresh token',
   })
   refreshToken(@Body() refreshTokenDto: RefreshTokenDto) {
@@ -213,7 +213,7 @@ export class AuthController {
     description: 'Invalidate user refresh tokens and log out',
   })
   @ApiResponse({
-    status: 200,
+    status: HttpStatus.OK,
     description: 'User logged out successfully',
     schema: {
       type: 'object',
@@ -223,7 +223,7 @@ export class AuthController {
     },
   })
   @ApiResponse({
-    status: 400,
+    status: HttpStatus.BAD_REQUEST,
     description: 'Invalid refresh token',
   })
   logout(@Body() logoutDto: LogOutDto) {
@@ -236,7 +236,7 @@ export class AuthController {
     description: 'Send password reset instructions to user email',
   })
   @ApiResponse({
-    status: 200,
+    status: HttpStatus.OK,
     description: 'Password reset instructions sent',
     schema: {
       type: 'object',
@@ -263,7 +263,7 @@ export class AuthController {
     description: 'Reset user password using the reset token',
   })
   @ApiResponse({
-    status: 200,
+    status: HttpStatus.OK,
     description: 'Password reset successful',
     schema: {
       type: 'object',
@@ -278,7 +278,7 @@ export class AuthController {
     },
   })
   @ApiResponse({
-    status: 400,
+    status: HttpStatus.BAD_REQUEST,
     description: 'Invalid or expired reset token',
   })
   resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
@@ -293,7 +293,7 @@ export class AuthController {
   })
   @ApiBearerAuth()
   @ApiResponse({
-    status: 200,
+    status: HttpStatus.OK,
     description: 'User profile retrieved successfully',
     schema: {
       type: 'object',
@@ -309,17 +309,46 @@ export class AuthController {
     },
   })
   @ApiResponse({
-    status: 401,
+    status: HttpStatus.UNAUTHORIZED,
     description: 'Unauthorized - Invalid or missing access token',
   })
-  // JWTAuthGuard is a guard that checks if the user is authenticated
   @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth('token')
+  getProfileInfo(@Request() req: RequestWithUser) {
+    return this.authService.getCurrentUser(req.user.id);
+  }
+
+  @Version('2')
+  @Get('profile')
+  @ApiOperation({
+    summary: 'Get user profile (v2)',
+    description:
+      'Get current authenticated user profile information with enhanced format - returns full name instead of separate first and last names',
+  })
+  @ApiBearerAuth()
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'User Profile retrieved successfully',
+    description: 'User profile retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string', example: 'uuid-string' },
+        email: { type: 'string', example: 'user@example.com' },
+        fullName: { type: 'string', example: 'John Doe' },
+      },
+    },
   })
-  getProfile(@Request() req: RequestWithUser) {
-    return this.authService.getCurrentUser(req.user.id);
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'Unauthorized - Invalid or missing access token',
+  })
+  @UseGuards(JwtAuthGuard)
+  async getProfile(@Request() req: RequestWithUser) {
+    const user = await this.authService.getCurrentUser(req.user.id);
+
+    return {
+      id: user.id,
+      email: user.email,
+      fullName: `${user.firstName} ${user.lastName}`,
+    };
   }
 }
