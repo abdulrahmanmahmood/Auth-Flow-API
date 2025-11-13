@@ -40,13 +40,18 @@ export class MailService {
     }
   }
 
-  async sendResetPasswordEmail(email: string, code: string) {
+  async sendResetPasswordEmail(
+    email: string,
+    code: string,
+    firstName?: string,
+  ) {
     try {
       await this.mailService.sendMail({
         to: email,
         subject: 'Reset Password',
         template: 'reset-password',
         context: {
+          firstName: firstName || 'there',
           link: 'https://linkktoresetpassword',
           code: code,
           expiration: '15',

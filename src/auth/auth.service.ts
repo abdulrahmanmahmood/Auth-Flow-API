@@ -177,9 +177,118 @@ export class AuthService {
     };
   }
 
-  async forgetPassword(forgotPasswordDto: ForgotPasswordDto) {}
+  async forgetPassword(forgotPasswordDto: ForgotPasswordDto) {
+    try {
+      const { email } = forgotPasswordDto;
 
-  async resetPassword(resetPasswordDto: ResetPasswordDto) {}
+      const user = await this.userService.findByEmail(email);
+      if (!user) {
+        return {
+          message: 'Password reset instructions sent',
+          descriptions:
+            'If your email is registered, you will receive password reset instructions',
+        };
+      }
+      await this.prisma.passwordResetToken.deleteMany({
+        where: {
+          userId: user.id,
+        },
+      });
+
+      // Generate a random 6-chars token and save in the DB
+      const resetToken = Math.random()
+        .toString(36)
+        .substring(2, 8)
+        .toUpperCase();
+      const expires = new Date();
+      expires.setDate(expires.getMinutes() + 15);
+
+      await this.prisma.passwordResetToken.create({
+        data: {
+          expires,
+          token: resetToken,
+          userId: user.id,
+        },
+      });
+      // Sent Reset Email
+      await this.mailService.sendResetPasswordEmail(
+        email,
+        resetToken,
+        user.firstName as string,
+      );
+      return {
+        message: 'Password reset instructions sent',
+        descriptions:
+          'If your email is registered, you will receive password reset instructions',
+      };
+    } catch (error) {
+      this.logger.error(error);
+      throw error;
+    }
+  }
+
+  async resetPassword(resetPasswordDto: ResetPasswordDto) {
+    try {
+      const { password, token } = resetPasswordDto;
+
+      const passwordResetToken =
+        await this.prisma.passwordResetToken.findUnique({
+          where: {
+            token: token,
+          },
+        });
+
+      if (!passwordResetToken) {
+        throw new BadRequestException({
+          message: 'Invalid reset token',
+          description: 'The password reset token is invalid or has expired',
+        });
+      }
+      if (new Date() > passwordResetToken.expires) {
+        await this.prisma.passwordResetToken.delete({
+          where: {
+            id: passwordResetToken.id,
+          },
+        });
+
+        throw new BadRequestException({
+          message: 'Token expired',
+          description:
+            'The password reset token has expired. Please request a new one.',
+        });
+      }
+
+      // Reset Password Process
+      const hashedPassword = await this.hashPassword(password);
+
+      // update the User's password
+      await this.userService.updatePassword(
+        passwordResetToken.userId,
+        hashedPassword,
+      );
+      // Delete password reset tokens for this user
+      await this.prisma.passwordResetToken.delete({
+        where: {
+          token: passwordResetToken.token,
+        },
+      });
+      // Delete all refresh tokens for this user to force re-login with the new password
+      await this.prisma.refreshToken.deleteMany({
+        where: {
+          userId: passwordResetToken.userId,
+        },
+      });
+
+      return {
+        message: 'Password reset successful',
+        description:
+          'Your password has been reset successfully. You can now login with your new password.',
+      };
+    } catch (error) {
+      this.logger.error(error);
+      throw error;
+    }
+  }
 
   async refreshToken(refreshTokenDto: RefreshTokenDto) {
     const { token } = refreshTokenDto;
@@ -215,6 +324,10 @@ export class AuthService {
     return {
       newRefreshToken,
     };
+  }
+
+  async getCurrentUser(userId: string) {
+    return await this.userService.findById(userId);
   }
 
   private async hashPassword(password: string): Promise<string> {
