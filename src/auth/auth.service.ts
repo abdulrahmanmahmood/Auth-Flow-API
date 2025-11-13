@@ -19,6 +19,7 @@ import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { LogOutDto } from './dto/logout.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { Users } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -30,7 +31,7 @@ export class AuthService {
     private readonly mailService: MailService,
     private readonly jwtService: JwtService,
   ) {}
-  async register(registerDto: RegisterDTO) {
+  async register(registerDto: RegisterDTO): Promise<Omit<Users, 'password'>> {
     try {
       const existingUser = await this.userService.findByEmail(
         registerDto.email,
@@ -55,6 +56,8 @@ export class AuthService {
         user.firstName || undefined,
       );
 
+      const { password, ...userWithoutPassword } = user;
+      // return userWithoutPassword;
       return user;
     } catch (error) {
       this.logger.error(error);
